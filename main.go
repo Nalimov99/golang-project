@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -19,7 +19,7 @@ func main() {
 
 	api := http.Server{
 		Addr:         "localhost:3020",
-		Handler:      http.HandlerFunc(Echo),
+		Handler:      http.HandlerFunc(ListProducts),
 		ReadTimeout:  timeout,
 		WriteTimeout: timeout,
 	}
@@ -55,7 +55,27 @@ func main() {
 	}
 }
 
-func Echo(w http.ResponseWriter, r *http.Request) {
-	time.Sleep(time.Second)
-	fmt.Fprint(w, r.Method, " ", r.URL)
+type Products struct {
+	Name     string `json:"name"`
+	Quantity int    `json:"quantity"`
+	Cost     int    `json:"cost"`
+}
+
+func ListProducts(w http.ResponseWriter, r *http.Request) {
+	list := []Products{
+		{Name: "Book", Quantity: 2, Cost: 10},
+	}
+
+	data, err := json.Marshal(list)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println("error marshaling ", err)
+		return
+	}
+
+	w.Header().Set("content-type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	if _, err := w.Write(data); err != nil {
+		log.Println(err)
+	}
 }
