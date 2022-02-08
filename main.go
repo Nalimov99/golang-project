@@ -5,15 +5,25 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 func main() {
 	log.Println("main : Started")
 	defer log.Println("main : Completed")
+
+	db, err := openDb()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 
 	const timeout = 5 * time.Second
 
@@ -53,6 +63,24 @@ func main() {
 			log.Fatalf("main : Could not stop server gracefully : %v", err)
 		}
 	}
+}
+
+func openDb() (*sqlx.DB, error) {
+	q := url.Values{}
+
+	q.Set("sslmode", "disable")
+	q.Set("timezone", "utc")
+	log.Print(q.Encode())
+	u := url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword("postgres", "1234"),
+		Host:     "localhost",
+		Path:     "postgres",
+		RawQuery: q.Encode(),
+	}
+
+	log.Print(u.String())
+	return sqlx.Open("postgres", u.String())
 }
 
 type Products struct {

@@ -1,0 +1,11 @@
+#docker-compose up
+version: "3.7"
+
+services:
+  db:
+    container_name: sales_db
+    image: postgres:14.1-alpine
+    environment:
+      POSTGRES_PASSWORD: 1234
+    ports:
+      - 5434:5434
