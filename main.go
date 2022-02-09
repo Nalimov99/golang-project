@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
+	"garagesale/schema"
 	"log"
 	"net/http"
 	"net/url"
@@ -24,6 +26,24 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	flag.Parse()
+	switch flag.Arg(0) {
+	case "migrate":
+		if err := schema.Migrate(db); err != nil {
+			log.Fatal("applying migrations error: ", err)
+		}
+
+		log.Print("Migrations complete")
+		return
+	case "seed":
+		if err := schema.Seed(db); err != nil {
+			log.Fatal("applying seed error: ", err)
+		}
+
+		log.Print("Seed data inserted")
+		return
+	}
 
 	const timeout = 5 * time.Second
 
@@ -70,6 +90,7 @@ func openDb() (*sqlx.DB, error) {
 
 	q.Set("sslmode", "disable")
 	q.Set("timezone", "utc")
+	q.Set("port", "5434")
 	log.Print(q.Encode())
 	u := url.URL{
 		Scheme:   "postgres",
@@ -79,6 +100,7 @@ func openDb() (*sqlx.DB, error) {
 		RawQuery: q.Encode(),
 	}
 
+	log.Print(u.String())
 	log.Print(u.String())
 	return sqlx.Open("postgres", u.String())
 }
