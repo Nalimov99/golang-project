@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"flag"
 	"garagesale/schema"
@@ -47,9 +48,13 @@ func main() {
 
 	const timeout = 5 * time.Second
 
+	ps := ProductService{
+		db: db,
+	}
+
 	api := http.Server{
 		Addr:         "localhost:3020",
-		Handler:      http.HandlerFunc(ListProducts),
+		Handler:      http.HandlerFunc(ps.List),
 		ReadTimeout:  timeout,
 		WriteTimeout: timeout,
 	}
@@ -106,14 +111,26 @@ func openDb() (*sqlx.DB, error) {
 }
 
 type Products struct {
-	Name     string `json:"name"`
-	Quantity int    `json:"quantity"`
-	Cost     int    `json:"cost"`
+	ID          int          `db:"product_id" json:"id"`
+	Name        string       `db:"name" json:"name"`
+	Quantity    int          `db:"quantity" json:"quantity"`
+	Cost        int          `db:"cost" json:"cost"`
+	DateCreated sql.NullTime `db:"date_created" json:"date_created"`
+	DateUpdated sql.NullTime `db:"date_updated" json:"date_updated"`
 }
 
-func ListProducts(w http.ResponseWriter, r *http.Request) {
-	list := []Products{
-		{Name: "Book", Quantity: 2, Cost: 10},
+type ProductService struct {
+	db *sqlx.DB
+}
+
+func (p *ProductService) List(w http.ResponseWriter, r *http.Request) {
+	list := []Products{}
+
+	const q = `SELECT * FROM products`
+	if err := p.db.Select(&list, q); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		log.Println("error querying db ", err)
+		return
 	}
 
 	data, err := json.Marshal(list)
