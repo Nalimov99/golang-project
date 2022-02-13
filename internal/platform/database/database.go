@@ -7,18 +7,29 @@ import (
 	_ "github.com/lib/pq" // Register postgres database
 )
 
-func Open() (*sqlx.DB, error) {
+type Config struct {
+	User     string `default:"postgres"`
+	Password string `default:"1234"`
+	Host     string `default:"localhost"`
+	Path     string `default:"postgres"`
+	SslMode  bool   `default:"false"`
+}
+
+func Open(c Config) (*sqlx.DB, error) {
 	q := url.Values{}
 
 	q.Set("sslmode", "disable")
+	if c.SslMode {
+		q.Set("sslmode", "require")
+	}
 	q.Set("timezone", "utc")
 	q.Set("port", "5434")
 
 	u := url.URL{
 		Scheme:   "postgres",
-		User:     url.UserPassword("postgres", "1234"),
-		Host:     "localhost",
-		Path:     "postgres",
+		User:     url.UserPassword(c.User, c.Password),
+		Host:     c.Host,
+		Path:     c.Path,
 		RawQuery: q.Encode(),
 	}
 

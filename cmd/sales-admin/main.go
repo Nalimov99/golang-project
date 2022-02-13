@@ -5,10 +5,20 @@ import (
 	"garagesale/internal/platform/database"
 	"garagesale/internal/schema"
 	"log"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
 func main() {
-	db, err := database.Open()
+	var cfg struct {
+		DB database.Config
+	}
+	err := envconfig.Process("garagesale", &cfg)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	db, err := database.Open(cfg.DB)
 	if err != nil {
 		log.Fatal(err)
 	}
