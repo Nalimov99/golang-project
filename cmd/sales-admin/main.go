@@ -7,15 +7,22 @@ import (
 	"log"
 
 	"github.com/kelseyhightower/envconfig"
+	"github.com/pkg/errors"
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	var cfg struct {
 		DB database.Config
 	}
 	err := envconfig.Process("garagesale", &cfg)
 	if err != nil {
-		log.Fatal(err.Error())
+		return errors.Wrap(err, "generating config usage")
 	}
 
 	db, err := database.Open(cfg.DB)
@@ -32,16 +39,16 @@ func main() {
 		}
 
 		log.Print("Migrations complete")
-		return
+		return nil
 	case "seed":
 		if err := schema.Seed(db); err != nil {
 			log.Fatal("applying seed error: ", err)
 		}
 
 		log.Print("Seed data inserted")
-		return
+		return nil
 	default:
 		log.Print("No args passed")
-		return
+		return nil
 	}
 }

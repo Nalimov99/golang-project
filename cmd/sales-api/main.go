@@ -12,10 +12,18 @@ import (
 	"garagesale/cmd/sales-api/internal/handlers"
 	"garagesale/internal/platform/database"
 
+	"github.com/pkg/errors"
+
 	"github.com/kelseyhightower/envconfig"
 )
 
 func main() {
+	if err := run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func run() error {
 	log.Println("main : Started")
 	defer log.Println("main : Completed")
 
@@ -30,7 +38,7 @@ func main() {
 	}
 	err := envconfig.Process("garagesale", &cfg)
 	if err != nil {
-		log.Fatal(err.Error())
+		return errors.Wrap(err, "generating config usage")
 	}
 
 	const dbConfigFormat = "\n\nDatabse config\nUser: %v\nPassword: %v\nHost: %v\nPath: %v\nSslMode: %v\n\n"
@@ -38,7 +46,7 @@ func main() {
 
 	db, err := database.Open(cfg.DB)
 	if err != nil {
-		log.Fatal(err)
+		return errors.Wrap(err, "Opening db")
 	}
 	defer db.Close()
 
@@ -67,7 +75,7 @@ func main() {
 
 	select {
 	case err := <-serverErrors:
-		log.Fatalf("error : listening and serving: %s", err)
+		return errors.Wrap(err, "listening and serving")
 
 	case <-shutdown:
 		log.Println("main : Start shutdown")
@@ -81,7 +89,9 @@ func main() {
 		}
 
 		if err != nil {
-			log.Fatalf("main : Could not stop server gracefully : %v", err)
+			return errors.Wrap(err, "gracefull shutdown")
 		}
 	}
+
+	return nil
 }
