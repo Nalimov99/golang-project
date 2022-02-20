@@ -5,6 +5,7 @@ import (
 	"garagesale/internal/platform/database"
 	"garagesale/internal/schema"
 	"log"
+	"os"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -17,6 +18,8 @@ func main() {
 }
 
 func run() error {
+	log := log.New(os.Stdout, "ADMIN: ", log.LstdFlags|log.Lshortfile)
+
 	var cfg struct {
 		DB database.Config
 	}

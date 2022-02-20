@@ -27,6 +27,8 @@ func run() error {
 	log.Println("main : Started")
 	defer log.Println("main : Completed")
 
+	log := log.New(os.Stdout, "SALES: ", log.LstdFlags|log.Lshortfile)
+
 	var cfg struct {
 		DB     database.Config
 		Server struct {
@@ -50,13 +52,9 @@ func run() error {
 	}
 	defer db.Close()
 
-	ps := handlers.Product{
-		DB: db,
-	}
-
 	api := http.Server{
 		Addr:         cfg.Server.Addr,
-		Handler:      http.HandlerFunc(ps.List),
+		Handler:      handlers.API(log, db),
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.ReadTimeout,
 	}

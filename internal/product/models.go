@@ -2,7 +2,7 @@ package product
 
 import "database/sql"
 
-type Products struct {
+type Product struct {
 	ID          int          `db:"product_id" json:"id"`
 	Name        string       `db:"name" json:"name"`
 	Quantity    int          `db:"quantity" json:"quantity"`
