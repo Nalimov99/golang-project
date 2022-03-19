@@ -1,6 +1,11 @@
 package product
 
-import "github.com/jmoiron/sqlx"
+import (
+	"time"
+
+	"github.com/jmoiron/sqlx"
+	"github.com/pkg/errors"
+)
 
 //List returns all known Products
 func List(db *sqlx.DB) ([]Product, error) {
@@ -11,7 +16,7 @@ func List(db *sqlx.DB) ([]Product, error) {
 		FROM products
 	`
 	if err := db.Select(&list, q); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "selecting products")
 	}
 
 	return list, nil
@@ -28,8 +33,25 @@ func Retrieve(db *sqlx.DB, id string) (*Product, error) {
 	`
 
 	if err := db.Get(&prod, q, id); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "selecting product")
 	}
 
 	return &prod, nil
+}
+
+// Create makes a new product
+func Create(db *sqlx.DB, np NewProduct, now time.Time) (*Product, error) {
+	var p Product
+
+	const q = `
+		INSERT INTO products
+		(name, cost, quantity, date_created, date_updated)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING *
+	`
+	if err := db.QueryRowx(q, np.Name, np.Cost, np.Quantity, now, now).StructScan(&p); err != nil {
+		return nil, errors.Wrapf(err, "inserting products: %v \nNow: %v", p, now)
+	}
+
+	return &p, nil
 }
