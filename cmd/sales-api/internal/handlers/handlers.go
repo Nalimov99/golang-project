@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"garagesale/internal/platform/web"
 	"garagesale/internal/product"
 	"log"
@@ -34,11 +33,14 @@ func (p *Product) Retrieve(w http.ResponseWriter, r *http.Request) error {
 
 	prod, err := product.Retrieve(p.DB, id)
 	if err != nil {
-		if err := errors.Cause(err); err == sql.ErrNoRows {
-			return err
+		switch err {
+		case product.ErrNotFound:
+			return web.NewRequestError(err, http.StatusNotFound)
+		case product.ErrInvalidId:
+			return web.NewRequestError(err, http.StatusBadRequest)
+		default:
+			return errors.Wrapf(err, "looking for product %q", id)
 		}
-
-		return err
 	}
 
 	return web.Respond(w, prod, http.StatusOK)

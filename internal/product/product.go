@@ -1,10 +1,18 @@
 package product
 
 import (
+	"database/sql"
+	"strconv"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
+)
+
+// Predefined errors for known failure scenarios
+var (
+	ErrNotFound  = errors.New("product not found")
+	ErrInvalidId = errors.New("ID provides was not a valid ID")
 )
 
 //List returns all known Products
@@ -26,6 +34,10 @@ func List(db *sqlx.DB) ([]Product, error) {
 func Retrieve(db *sqlx.DB, id string) (*Product, error) {
 	var prod Product
 
+	if _, err := strconv.Atoi(id); err != nil {
+		return nil, ErrInvalidId
+	}
+
 	const q = `
 		SELECT product_id, name, quantity, cost, date_created, date_updated
 		FROM products
@@ -33,7 +45,11 @@ func Retrieve(db *sqlx.DB, id string) (*Product, error) {
 	`
 
 	if err := db.Get(&prod, q, id); err != nil {
-		return nil, errors.Wrap(err, "selecting product")
+		if err == sql.ErrNoRows {
+			return nil, ErrNotFound
+		}
+
+		return nil, err
 	}
 
 	return &prod, nil
