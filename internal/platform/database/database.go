@@ -23,7 +23,7 @@ func Open(c Config) (*sqlx.DB, error) {
 		q.Set("sslmode", "require")
 	}
 	q.Set("timezone", "utc")
-	q.Set("port", "5434")
+	q.Set("port", "5432")
 
 	u := url.URL{
 		Scheme:   "postgres",

@@ -19,59 +19,43 @@ type Product struct {
 }
 
 // List gives all known products
-func (p *Product) List(w http.ResponseWriter, r *http.Request) {
+func (p *Product) List(w http.ResponseWriter, r *http.Request) error {
 	list, err := product.List(p.DB)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		p.Log.Println("error querying db ", err)
-		return
+		return err
 	}
 
-	if err := web.Respond(w, list, http.StatusOK); err != nil {
-		p.Log.Println(err, "error responding")
-	}
+	return web.Respond(w, list, http.StatusOK)
 }
 
 // Retrieve gives a single product
-func (p *Product) Retrieve(w http.ResponseWriter, r *http.Request) {
+func (p *Product) Retrieve(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	prod, err := product.Retrieve(p.DB, id)
 	if err != nil {
-		if errors.Cause(err) == sql.ErrNoRows {
-			w.WriteHeader(http.StatusNotFound)
-			p.Log.Printf("%v. id: %v", err, id)
-			return
+		if err := errors.Cause(err); err == sql.ErrNoRows {
+			return err
 		}
 
-		w.WriteHeader(http.StatusInternalServerError)
-		p.Log.Println("error querying db ", err)
-		return
+		return err
 	}
 
-	if err := web.Respond(w, prod, http.StatusOK); err != nil {
-		p.Log.Println(err, "error responding")
-	}
+	return web.Respond(w, prod, http.StatusOK)
 }
 
 //Create decode a JSON from a POST request and create a new product
-func (p *Product) Create(w http.ResponseWriter, r *http.Request) {
+func (p *Product) Create(w http.ResponseWriter, r *http.Request) error {
 	var np product.NewProduct
 
 	if err := web.Decode(r, &np); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		p.Log.Println(err)
-		return
+		return err
 	}
 
 	prod, err := product.Create(p.DB, np, time.Now())
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		p.Log.Println("error querying db ", err)
-		return
+		return err
 	}
 
-	if err := web.Respond(w, prod, http.StatusCreated); err != nil {
-		p.Log.Println(err, "error responding")
-	}
+	return web.Respond(w, prod, http.StatusCreated)
 }
