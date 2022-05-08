@@ -42,7 +42,7 @@ func Setup(t *testing.T) (*sqlx.DB, func()) {
 	}
 
 	if pingError != nil {
-		stopContainer(t, c)
+		stopContainer(t)
 		t.Fatalf("db is not ready: %v", pingError)
 	}
 
@@ -55,7 +55,7 @@ func Setup(t *testing.T) (*sqlx.DB, func()) {
 	teardown := func() {
 		t.Helper()
 		db.Close()
-		stopContainer(t, c)
+		stopContainer(t)
 	}
 
 	return db, teardown

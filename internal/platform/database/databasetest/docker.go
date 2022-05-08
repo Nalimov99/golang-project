@@ -13,18 +13,25 @@ type container struct {
 	Ports string //IP:Port
 }
 
+const containerName = "gotest"
+
 // startContainer runs a postgres container to execute commands
 func startContainer(t *testing.T) *container {
-	containerName := "gotest"
-	cmd := exec.Command("docker", "run", "--publish",
-		"127.0.0.1:5432:5432", "--name", containerName, "-P", "-d", "-e",
-		"POSTGRES_PASSWORD=postgres", "postgres:14.1-alpine")
+	t.Helper()
+
+	cmd := exec.Command("docker", "run",
+		"--name", containerName,
+		"-d",
+		"-e", "POSTGRES_PASSWORD=postgres",
+		"-e", "POSTGRESQL_USER=postgres",
+		"-p", "5433:5432",
+		"postgres:14.1-alpine")
 
 	var out bytes.Buffer
 	cmd.Stdout = &out
 
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("could not start container %v", err)
+		t.Fatalf("could not start container: %s. Error: %v", containerName, err)
 	}
 
 	out.Reset()
@@ -48,7 +55,7 @@ func startContainer(t *testing.T) *container {
 	if err := json.Unmarshal(out.Bytes(), &doc); err != nil {
 		t.Fatalf("could not decode json %v", err)
 	}
-
+	t.Log(doc[0].NetworkSettings.Ports)
 	network := doc[0].NetworkSettings.Ports.TCP5432[0]
 
 	return &container{
@@ -58,18 +65,18 @@ func startContainer(t *testing.T) *container {
 }
 
 // stopContainer stop and removes the specified container
-func stopContainer(t *testing.T, c *container) {
+func stopContainer(t *testing.T) {
 	t.Helper()
 
-	if err := exec.Command("docker", "stop", c.Name).Run(); err != nil {
-		t.Fatalf("could not stop container: %s. Error: %s", c.Name, err)
+	if err := exec.Command("docker", "stop", containerName).Run(); err != nil {
+		t.Fatalf("could not stop container: %s. Error: %s", containerName, err)
 	}
 
-	t.Logf("container stopped: %s", c.Name)
+	t.Logf("container stopped: %s", containerName)
 
-	if err := exec.Command("docker", "rm", c.Name).Run(); err != nil {
-		t.Fatalf("could not remove container: %s", c.Name)
+	if err := exec.Command("docker", "rm", containerName).Run(); err != nil {
+		t.Fatalf("could not remove container: %s. Error: %s", containerName, err)
 	}
 
-	t.Logf("container removed: %s", c.Name)
+	t.Logf("container removed: %s", containerName)
 }
