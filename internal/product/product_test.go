@@ -1,6 +1,7 @@
 package product_test
 
 import (
+	"context"
 	"garagesale/internal/platform/database/databasetest"
 	"garagesale/internal/product"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 func TestProducts(t *testing.T) {
 	db, teardown := databasetest.Setup(t)
 	t.Cleanup(teardown)
+	ctx := context.Background()
 
 	np := product.NewProduct{
 		Name:     "test",
@@ -22,12 +24,12 @@ func TestProducts(t *testing.T) {
 
 	now := time.Now()
 
-	p, err := product.Create(db, np, now)
+	p, err := product.Create(ctx, db, np, now)
 	if err != nil {
 		t.Fatalf("could not create product %v", err)
 	}
 
-	saved, err := product.Retrieve(db, strconv.Itoa(p.ID))
+	saved, err := product.Retrieve(ctx, db, strconv.Itoa(p.ID))
 	if err != nil {
 		t.Fatalf("could not retrieve product, id: %v", p.ID)
 	}
@@ -40,6 +42,7 @@ func TestProducts(t *testing.T) {
 func TestProductList(t *testing.T) {
 	db, teardown := databasetest.Setup(t)
 	t.Cleanup(teardown)
+	ctx := context.Background()
 
 	newProducts := [2]product.NewProduct{
 		{
@@ -58,7 +61,7 @@ func TestProductList(t *testing.T) {
 	var savedProducts []product.Product
 
 	for _, value := range newProducts {
-		saved, err := product.Create(db, value, now)
+		saved, err := product.Create(ctx, db, value, now)
 		if err != nil {
 			t.Fatalf("could not create product %v", err)
 		}
@@ -71,7 +74,7 @@ func TestProductList(t *testing.T) {
 	}
 
 	for _, value := range savedProducts {
-		retrieve, err := product.Retrieve(db, strconv.Itoa(value.ID))
+		retrieve, err := product.Retrieve(ctx, db, strconv.Itoa(value.ID))
 		if err != nil {
 			t.Fatalf("could not retrieve product, ID: %d", value.ID)
 		}
