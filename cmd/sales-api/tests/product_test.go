@@ -25,9 +25,14 @@ func TestProducts(t *testing.T) {
 		app: handlers.API(log, db),
 	}
 
+	t.Log("RUN PRODUCT TESTS")
 	t.Run("CREATE", tests.Create)
 	t.Run("LIST", tests.List)
 	t.Run("RETRIEVE", tests.Retrieve)
+
+	t.Log("RUN SALES TESTS")
+	t.Run("ADD SALE", tests.AddSale)
+	t.Run("SALE LIST", tests.ListSales)
 }
 
 // ProductTests holds methods for each product subtest
@@ -35,6 +40,7 @@ func TestProducts(t *testing.T) {
 type ProductTest struct {
 	app      http.Handler
 	products []map[string]interface{}
+	sales    []map[string]interface{}
 }
 
 func (p *ProductTest) Create(t *testing.T) {
@@ -50,7 +56,22 @@ func (p *ProductTest) Create(t *testing.T) {
 		t.Fatalf("decoding: %v", err)
 	}
 
-	p.products = append(p.products, product)
+	want := map[string]interface{}{
+		"name":         "1",
+		"quantity":     float64(1),
+		"cost":         float64(1),
+		"id":           product["id"],
+		"sold":         product["sold"],
+		"revenue":      product["revenue"],
+		"date_created": product["date_created"],
+		"date_updated": product["date_updated"],
+	}
+
+	if diff := cmp.Diff(want, product); diff != "" {
+		t.Fatalf("expected product diff: \n%v", diff)
+	}
+
+	p.products = append(p.products, want)
 }
 
 func (p *ProductTest) List(t *testing.T) {
@@ -88,5 +109,61 @@ func (p *ProductTest) Retrieve(t *testing.T) {
 
 	if diff := cmp.Diff(want, fetched); diff != "" {
 		t.Fatalf("expected products diff: \n%v", diff)
+	}
+}
+
+func (p *ProductTest) AddSale(t *testing.T) {
+	product := p.products[0]
+	saleJson := strings.NewReader(`
+		{
+			"quantity": 1,
+			"paid": 20
+		}
+	`)
+
+	req := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/v1/products/%v/sales", product["id"]), saleJson)
+	resp := httptest.NewRecorder()
+
+	p.app.ServeHTTP(resp, req)
+
+	var newSale map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&newSale); err != nil {
+		t.Fatalf("decoding: %v", err)
+	}
+
+	want := map[string]interface{}{
+		"quantity":     float64(1),
+		"paid":         float64(20),
+		"date_created": newSale["date_created"],
+		"id":           newSale["id"],
+		"product_id":   product["id"],
+	}
+
+	if diff := cmp.Diff(want, newSale); diff != "" {
+		t.Fatalf("expected sales diff: \n%v", diff)
+	}
+
+	p.sales = append(p.sales, want)
+}
+
+func (p *ProductTest) ListSales(t *testing.T) {
+	product := p.products[0]
+
+	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/v1/products/%v/sales", product["id"]), nil)
+	resp := httptest.NewRecorder()
+
+	p.app.ServeHTTP(resp, req)
+
+	var fetched []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&fetched); err != nil {
+		t.Fatalf("decoding: %v", err)
+	}
+
+	if len(fetched) != len(p.sales) {
+		t.Fatalf("expected lenght is not equal. Want: %v, Get: %v", len(p.sales), len(fetched))
+	}
+
+	if diff := cmp.Diff(fetched, p.sales); diff != "" {
+		t.Fatalf("expected sales diff: \n%v", diff)
 	}
 }

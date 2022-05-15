@@ -22,6 +22,22 @@ CREATE TABLE products (
 );
 		`,
 	},
+	{
+		Version:     2,
+		Description: "Add sales",
+		Script: `
+		CREATE TABLE sales (
+			sale_id UUID,
+			product_id int,
+			quantity int,
+			paid int,
+			date_created TIMESTAMP,
+			
+			PRIMARY KEY (sale_id),
+			FOREIGN KEY (product_id) REFERENCES products (product_id) ON DELETE CASCADE
+		);
+		`,
+	},
 }
 
 func Migrate(db *sqlx.DB) error {

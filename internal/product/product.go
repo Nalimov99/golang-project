@@ -21,8 +21,14 @@ func List(ctx context.Context, db *sqlx.DB) ([]Product, error) {
 	list := []Product{}
 
 	const q = `
-		SELECT product_id, name, quantity, cost, date_created, date_updated
-		FROM products
+		SELECT 
+			p.product_id, p.name, p.quantity, p.cost,
+			COALESCE(SUM(s.quantity), 0) AS sold,
+			COALESCE(SUM(s.paid), 0) AS revenue,
+			p.date_created, p.date_updated
+		FROM products AS p
+		LEFT JOIN sales AS s ON s.product_id = p.product_id
+		GROUP BY p.product_id
 	`
 	if err := db.SelectContext(ctx, &list, q); err != nil {
 		return nil, errors.Wrap(err, "selecting products")
@@ -40,9 +46,15 @@ func Retrieve(ctx context.Context, db *sqlx.DB, id string) (*Product, error) {
 	}
 
 	const q = `
-		SELECT product_id, name, quantity, cost, date_created, date_updated
-		FROM products
-		WHERE product_id = $1
+		SELECT 
+		p.product_id, p.name, p.quantity, p.cost,
+		COALESCE(SUM(s.quantity), 0) AS sold,
+		COALESCE(SUM(s.paid), 0) AS revenue,
+		p.date_created, p.date_updated
+	FROM products AS p
+	LEFT JOIN sales AS s ON s.product_id = p.product_id
+	WHERE p.product_id = $1
+	GROUP BY p.product_id
 	`
 
 	if err := db.GetContext(ctx, &prod, q, id); err != nil {
@@ -66,7 +78,7 @@ func Create(ctx context.Context, db *sqlx.DB, np NewProduct, now time.Time) (*Pr
 		VALUES ($1, $2, $3, $4, $5)
 		RETURNING *
 	`
-	if err := db.QueryRowxContext(ctx, q, np.Name, np.Cost, np.Quantity, now, now).StructScan(&p); err != nil {
+	if err := db.QueryRowxContext(ctx, q, np.Name, np.Cost, np.Quantity, now.UTC(), now.UTC()).StructScan(&p); err != nil {
 		return nil, errors.Wrapf(err, "inserting products: %v \nNow: %v", p, now)
 	}
 

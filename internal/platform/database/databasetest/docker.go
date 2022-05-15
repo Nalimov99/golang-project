@@ -55,7 +55,7 @@ func startContainer(t *testing.T) *container {
 	if err := json.Unmarshal(out.Bytes(), &doc); err != nil {
 		t.Fatalf("could not decode json %v", err)
 	}
-	t.Log(doc[0].NetworkSettings.Ports)
+
 	network := doc[0].NetworkSettings.Ports.TCP5432[0]
 
 	return &container{
