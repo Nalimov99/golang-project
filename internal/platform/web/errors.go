@@ -1,14 +1,19 @@
 package web
 
-//ErrorResponse how we respond to the clients when something goes wrong
+// FieldError is used to indicate an error with a specific request field
+type FieldError map[string]string
+
+// ErrorResponse how we respond to the clients when something goes wrong
 type ErrorResponse struct {
-	Error string `json:"error"`
+	Error      string     `json:"error"`
+	FieldError FieldError `json:"fields,omitempty"`
 }
 
 // Error is used to add a web information to a request error
 type Error struct {
-	Err    error
-	Status int
+	Err        error
+	Status     int
+	FieldError FieldError `json:"fields,omitempty"`
 }
 
 // NewRequestError is when a known error condition is encountered
