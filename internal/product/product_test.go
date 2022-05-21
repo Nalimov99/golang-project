@@ -84,3 +84,56 @@ func TestProductList(t *testing.T) {
 		}
 	}
 }
+
+func TestProductUpdat(t *testing.T) {
+	db, teardown := databasetest.Setup(t)
+	t.Cleanup(teardown)
+	ctx := context.Background()
+	createdTime := time.Now()
+
+	newProduct := product.NewProduct{
+		Name:     "created name",
+		Quantity: 10,
+		Cost:     10,
+	}
+	createdProduct, err := product.Create(ctx, db, newProduct, createdTime)
+	if err != nil {
+		t.Fatal("could not create a product")
+	}
+
+	updatedTime := time.Now()
+	updateName := "updated name"
+	updateCost := 5
+	updateQuantity := 5
+	update := product.UpdateProduct{
+		Name:     &updateName,
+		Cost:     &updateCost,
+		Quantity: &updateQuantity,
+	}
+	got, err := product.Update(ctx, db, strconv.Itoa(createdProduct.ID), update, updatedTime)
+	if err != nil {
+		t.Fatalf("could not update product: %v", err)
+	}
+
+	if createdTime.UTC().Format(time.ANSIC) != got.DateCreated.Time.Format(time.ANSIC) {
+		t.Fatalf("dateCreated is not equal: \n%v, \n%v", createdTime, got.DateCreated.Time)
+	}
+	if updatedTime.UTC().Format(time.ANSIC) != got.DateUpdated.Time.Format(time.ANSIC) {
+		t.Fatalf("dateUpdated is not equal: \n%v, \n%v", updatedTime, got.DateUpdated.Time)
+	}
+
+	want := product.Product{
+		ID:          createdProduct.ID,
+		Name:        *update.Name,
+		Quantity:    *update.Quantity,
+		Cost:        *update.Cost,
+		Sold:        createdProduct.Sold,
+		Revenue:     createdProduct.Revenue,
+		DateCreated: got.DateCreated,
+		DateUpdated: got.DateUpdated,
+	}
+
+	if diff := cmp.Diff(want, *got); diff != "" {
+		t.Fatalf("expected product did not match: %v", diff)
+	}
+}

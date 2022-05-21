@@ -20,8 +20,17 @@ type Product struct {
 // NewProduct is what we reqiered from clients to make new product
 type NewProduct struct {
 	Name     string `json:"name" validate:"required"`
-	Quantity int    `json:"quantity" validate:"gt=0"`
+	Quantity int    `json:"quantity" validate:"gte=0"`
 	Cost     int    `json:"cost" validate:"gt=0"`
+}
+
+// UpdateProduct defines what information can be provided to modify
+// an existing Product. All fields are optional so client can send
+// just the fields they want changed.
+type UpdateProduct struct {
+	Name     *string `json:"name"`
+	Quantity *int    `json:"quantity" validate:"omitempty,gte=0"`
+	Cost     *int    `json:"cost" validate:"omitempty,gt=0"`
 }
 
 // Sale reperesents one item of a transaction where some amount of product

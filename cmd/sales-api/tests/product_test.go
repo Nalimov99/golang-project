@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/google/go-cmp/cmp"
 )
@@ -29,6 +31,7 @@ func TestProducts(t *testing.T) {
 	t.Run("CREATE", tests.Create)
 	t.Run("LIST", tests.List)
 	t.Run("RETRIEVE", tests.Retrieve)
+	t.Run("UPDATE", tests.Update)
 
 	t.Log("RUN SALES TESTS")
 	t.Run("ADD SALE", tests.AddSale)
@@ -110,6 +113,63 @@ func (p *ProductTest) Retrieve(t *testing.T) {
 	if diff := cmp.Diff(want, fetched); diff != "" {
 		t.Fatalf("expected products diff: \n%v", diff)
 	}
+}
+
+func (p *ProductTest) Update(t *testing.T) {
+	product := p.products[0]
+
+	updateName := "update name"
+	updateCost := 10
+	updateQuantity := 20
+	update := strings.NewReader(`
+		{
+			"name": "` + updateName + `",
+			"cost": ` + strconv.Itoa(updateCost) + `,
+			"quantity": ` + strconv.Itoa(updateQuantity) + `
+		}
+	`)
+
+	req := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/v1/products/%v", product["id"]), update)
+	resp := httptest.NewRecorder()
+
+	p.app.ServeHTTP(resp, req)
+
+	var got map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatalf("decoding: %v", err)
+	}
+
+	dateUpdatedStr := got["date_updated"].(map[string]interface{})["Time"].(string)
+	dateUpdated, err := time.Parse(time.RFC3339, dateUpdatedStr)
+	if err != nil {
+		t.Fatalf("could not parse date: %v", err)
+	}
+	dateCreatedStr := got["date_updated"].(map[string]interface{})["Time"].(string)
+	dateCreated, err := time.Parse(time.RFC3339, dateCreatedStr)
+	if err != nil {
+		t.Fatalf("could not parse date: %v", err)
+	}
+
+	if dateCreated.Before(dateUpdated) {
+		t.Fatalf("time is not valid: created - %v, updated - %v", got["date_created"], got["date_updated"])
+	}
+
+	want := map[string]interface{}{
+		"name":         updateName,
+		"quantity":     float64(updateQuantity),
+		"cost":         float64(updateCost),
+		"id":           got["id"],
+		"sold":         got["sold"],
+		"revenue":      got["revenue"],
+		"date_created": got["date_created"],
+		"date_updated": got["date_updated"],
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("expected products diff: \n%v", diff)
+	}
+
+	p.products[0] = want
 }
 
 func (p *ProductTest) AddSale(t *testing.T) {
