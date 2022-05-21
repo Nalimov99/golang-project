@@ -32,6 +32,7 @@ func TestProducts(t *testing.T) {
 	t.Run("LIST", tests.List)
 	t.Run("RETRIEVE", tests.Retrieve)
 	t.Run("UPDATE", tests.Update)
+	t.Run("DELETE", tests.DeleteProduct)
 
 	t.Log("RUN SALES TESTS")
 	t.Run("ADD SALE", tests.AddSale)
@@ -170,6 +171,52 @@ func (p *ProductTest) Update(t *testing.T) {
 	}
 
 	p.products[0] = want
+}
+
+func (p *ProductTest) DeleteProduct(t *testing.T) {
+	// create
+	np := strings.NewReader(`{"name": "1", "quantity": 1,  "cost": 1}`)
+
+	cResp := httptest.NewRecorder()
+	cReq := httptest.NewRequest(http.MethodPost, "/v1/products", np)
+	p.app.ServeHTTP(cResp, cReq)
+
+	var product map[string]interface{}
+	if err := json.NewDecoder(cResp.Body).Decode(&product); err != nil {
+		t.Fatalf("decoding: %v", err)
+	}
+
+	// list
+	lReq := httptest.NewRequest(http.MethodGet, "/v1/products", nil)
+	lResp := httptest.NewRecorder()
+
+	p.app.ServeHTTP(lResp, lReq)
+
+	var list []map[string]interface{}
+	if err := json.NewDecoder(lResp.Body).Decode(&list); err != nil {
+		t.Fatalf("decoding: %v", err)
+	}
+
+	// delete
+	dReq := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/v1/products/%v", product["id"]), nil)
+	dResp := httptest.NewRecorder()
+
+	p.app.ServeHTTP(dResp, dReq)
+
+	if dResp.Code != http.StatusNoContent {
+		t.Fatalf("expected status code: %d, got: %d", http.StatusNoContent, dResp.Code)
+	}
+
+	// new list
+	p.app.ServeHTTP(lResp, lReq)
+	var newList []map[string]interface{}
+	if err := json.NewDecoder(lResp.Body).Decode(&newList); err != nil {
+		t.Fatalf("decoding: %v", err)
+	}
+
+	if len(list)-1 != len(newList) {
+		t.Fatalf("expected list length: %v, gotted list length: %v", len(list)-1, len(newList))
+	}
 }
 
 func (p *ProductTest) AddSale(t *testing.T) {

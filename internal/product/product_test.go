@@ -85,7 +85,7 @@ func TestProductList(t *testing.T) {
 	}
 }
 
-func TestProductUpdat(t *testing.T) {
+func TestProductUpdate(t *testing.T) {
 	db, teardown := databasetest.Setup(t)
 	t.Cleanup(teardown)
 	ctx := context.Background()
@@ -135,5 +135,36 @@ func TestProductUpdat(t *testing.T) {
 
 	if diff := cmp.Diff(want, *got); diff != "" {
 		t.Fatalf("expected product did not match: %v", diff)
+	}
+}
+
+func TestProductDelete(t *testing.T) {
+	db, teardown := databasetest.Setup(t)
+	t.Cleanup(teardown)
+	ctx := context.Background()
+
+	np := product.NewProduct{
+		Name:     "2",
+		Quantity: 1,
+		Cost:     1,
+	}
+
+	created, err := product.Create(ctx, db, np, time.Now())
+	if err != nil {
+		t.Fatal("could not create")
+	}
+
+	id := strconv.Itoa(created.ID)
+
+	if _, err := product.Retrieve(ctx, db, id); err != nil {
+		t.Fatal("could not retrieve")
+	}
+	if err := product.Delete(ctx, db, id); err != nil {
+		t.Fatalf("could not delete: %v", err)
+	}
+
+	_, err = product.Retrieve(ctx, db, id)
+	if err != product.ErrNotFound {
+		t.Fatal(err)
 	}
 }

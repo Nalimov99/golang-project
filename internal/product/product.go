@@ -126,3 +126,22 @@ func Update(ctx context.Context, db *sqlx.DB, id string, update UpdateProduct, n
 
 	return p, nil
 }
+
+// Delete remove a Product. It will error if the specified ID
+// is invalid or does not reference an existing Product.
+func Delete(ctx context.Context, db *sqlx.DB, id string) error {
+	if _, err := strconv.Atoi(id); err != nil {
+		return ErrInvalidId
+	}
+
+	q := `
+		DELETE FROM products
+		WHERE product_id = $1
+	`
+
+	if _, err := db.ExecContext(ctx, q, id); err != nil {
+		return errors.Wrap(err, "deleting product")
+	}
+
+	return nil
+}
