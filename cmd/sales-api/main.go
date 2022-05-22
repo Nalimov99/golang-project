@@ -11,6 +11,7 @@ import (
 
 	"garagesale/cmd/sales-api/internal/handlers"
 	"garagesale/internal/platform/database"
+	_ "net/http/pprof" // Register the /debug/pprof handlers
 
 	"github.com/pkg/errors"
 
@@ -33,6 +34,7 @@ func run() error {
 		DB     database.Config
 		Server struct {
 			Addr                  string        `default:"localhost:3020"`
+			Debug                 string        `default:"localhost:6060"`
 			ReadTimeout           time.Duration `default:"5s" split_words:"true"`
 			WriteTimeout          time.Duration `default:"5s" split_words:"true"`
 			GracefullShutdownTime time.Duration `default:"5s" split_words:"true"`
@@ -51,6 +53,12 @@ func run() error {
 		return errors.Wrap(err, "Opening db")
 	}
 	defer db.Close()
+
+	// Start debug service
+	go func() {
+		log.Printf("main : Debug listen on %s", cfg.Server.Debug)
+		http.ListenAndServe(cfg.Server.Debug, nil)
+	}()
 
 	api := http.Server{
 		Addr:         cfg.Server.Addr,
