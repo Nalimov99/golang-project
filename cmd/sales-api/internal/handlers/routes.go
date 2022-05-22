@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"garagesale/internal/middleware"
 	"garagesale/internal/platform/web"
 	"log"
 	"net/http"
@@ -9,7 +10,7 @@ import (
 )
 
 func API(log *log.Logger, db *sqlx.DB) http.Handler {
-	app := web.NewApp(log)
+	app := web.NewApp(log, middleware.Errors(log))
 
 	c := Check{DB: db}
 	app.Handle(http.MethodGet, "/v1/health", c.Health)

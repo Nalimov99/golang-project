@@ -82,7 +82,11 @@ func (p *Product) UpdateProduct(w http.ResponseWriter, r *http.Request) error {
 
 	prod, err := product.Update(r.Context(), p.DB, id, updates, time.Now())
 	if err != nil {
-		return err
+		if webErr := matchPredefinedErrors(err); webErr != nil {
+			return webErr
+		}
+
+		return errors.Wrapf(err, "updating product %v", id)
 	}
 
 	return web.Respond(w, prod, http.StatusOK)
