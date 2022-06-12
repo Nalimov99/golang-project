@@ -10,7 +10,7 @@ import (
 )
 
 func API(log *log.Logger, db *sqlx.DB) http.Handler {
-	app := web.NewApp(log, middleware.Errors(log))
+	app := web.NewApp(log, middleware.Errors(log), middleware.Metric())
 
 	c := Check{DB: db}
 	app.Handle(http.MethodGet, "/v1/health", c.Health)

@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "expvar" // register the /debug/vars handlers
 	"garagesale/cmd/sales-api/internal/handlers"
 	"garagesale/internal/platform/database"
 	_ "net/http/pprof" // Register the /debug/pprof handlers
