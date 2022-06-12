@@ -38,6 +38,23 @@ CREATE TABLE products (
 		);
 		`,
 	},
+	{
+		Version:     3,
+		Description: "Add users",
+		Script: `
+		CREATE TABLE users (
+			user_id UUID,
+			name TEXT,
+			email TEXT UNIQUE,
+			roles TEXT[],
+			password_hash TEXT,
+			date_created TIMESTAMP,
+			date_updated TIMESTAMP,
+
+			PRIMARY KEY (user_id)
+		);
+		`,
+	},
 }
 
 func Migrate(db *sqlx.DB) error {

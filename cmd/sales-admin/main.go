@@ -1,14 +1,24 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
+	"context"
 	"flag"
+	"fmt"
+	"garagesale/internal/platform/auth"
 	"garagesale/internal/platform/database"
+	"garagesale/internal/platform/user"
 	"garagesale/internal/schema"
 	"log"
 	"os"
+	"strings"
+	"syscall"
+	"time"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
+	"golang.org/x/term"
 )
 
 func main() {
@@ -23,35 +33,116 @@ func run() error {
 	var cfg struct {
 		DB database.Config
 	}
-	err := envconfig.Process("garagesale", &cfg)
-	if err != nil {
+	if err := envconfig.Process("garagesale", &cfg); err != nil {
 		return errors.Wrap(err, "generating config usage")
 	}
 
-	db, err := database.Open(cfg.DB)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	var err error
 
 	flag.Parse()
 	switch flag.Arg(0) {
 	case "migrate":
-		if err := schema.Migrate(db); err != nil {
-			log.Fatal("applying migrations error: ", err)
+		err = migrate(cfg.DB)
+		if err == nil {
+			log.Print("migrations complete")
 		}
-
-		log.Print("Migrations complete")
-		return nil
 	case "seed":
-		if err := schema.Seed(db); err != nil {
-			log.Fatal("applying seed error: ", err)
+		err = seed(cfg.DB)
+		if err == nil {
+			log.Print("seed complete")
 		}
-
-		log.Print("Seed data inserted")
-		return nil
+	case "useradd":
+		err = useradd(cfg.DB)
+		if err == nil {
+			log.Print("user added")
+		}
 	default:
 		log.Print("No args passed")
 		return nil
 	}
+
+	return err
+}
+
+func migrate(cfg database.Config) error {
+	db, err := database.Open(cfg)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	if err := schema.Migrate(db); err != nil {
+		return errors.Wrap(err, "applying migrations")
+	}
+
+	return nil
+}
+
+func seed(cfg database.Config) error {
+	db, err := database.Open(cfg)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	if err := schema.Seed(db); err != nil {
+		return errors.Wrap(err, "applying seed")
+	}
+
+	return nil
+}
+
+func useradd(cfg database.Config) error {
+	db, err := database.Open(cfg)
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+
+	reader := bufio.NewReader(os.Stdin)
+
+	fmt.Print("Enter name: ")
+	name, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+	name = strings.TrimSuffix(name, "\n")
+
+	fmt.Print("Enter email: ")
+	email, err := reader.ReadString('\n')
+	if err != nil {
+		return err
+	}
+	email = strings.TrimSuffix(email, "\n")
+
+	fmt.Print("Enter Password: ")
+	bytePassword, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return err
+	}
+
+	fmt.Println()
+	fmt.Print("Repeat Password: ")
+	repeatBytePassword, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return err
+	}
+
+	if bytes.Compare(repeatBytePassword, bytePassword) != 0 {
+		return errors.New("passwords are not equal")
+	}
+
+	nu := user.NewUser{
+		Name:            name,
+		Email:           email,
+		Roles:           []string{auth.RoleAdmin, auth.RoleUser},
+		Password:        string(bytePassword),
+		PasswordConfirm: string(repeatBytePassword),
+	}
+
+	if _, err := user.Create(context.Background(), db, nu, time.Now()); err != nil {
+		return err
+	}
+
+	return nil
 }
