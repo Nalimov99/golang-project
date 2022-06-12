@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"expvar"
 	"garagesale/internal/platform/web"
 	"net/http"
@@ -23,8 +24,8 @@ func Metric() web.Middleware {
 	// This is actual mw function to be executed
 	f := func(before web.Handler) web.Handler {
 		// This is main handler
-		h := func(w http.ResponseWriter, r *http.Request) error {
-			err := before(w, r)
+		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+			err := before(ctx, w, r)
 
 			m.req.Add(1)
 

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"errors"
 	"garagesale/internal/platform/web"
 	"log"
@@ -12,10 +13,10 @@ func Logger(log *log.Logger) web.Middleware {
 	// This is actual mw function to be executed
 	f := func(before web.Handler) web.Handler {
 		// This is main handler
-		h := func(w http.ResponseWriter, r *http.Request) error {
-			err := before(w, r)
+		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+			err := before(ctx, w, r)
 
-			v, ok := r.Context().Value(web.KeyValues).(*web.ContexValues)
+			v, ok := ctx.Value(web.KeyValues).(*web.ContexValues)
 			if !ok {
 				return errors.New("web values missing from context")
 			}
