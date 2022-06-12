@@ -36,7 +36,7 @@ func (p *Product) List(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return web.Respond(w, list, http.StatusOK)
+	return web.Respond(r.Context(), w, list, http.StatusOK)
 }
 
 // Retrieve gives a single product
@@ -52,7 +52,7 @@ func (p *Product) Retrieve(w http.ResponseWriter, r *http.Request) error {
 		return errors.Wrapf(err, "looking for product %v", id)
 	}
 
-	return web.Respond(w, prod, http.StatusOK)
+	return web.Respond(r.Context(), w, prod, http.StatusOK)
 }
 
 //Create decode a JSON from a POST request and create a new product
@@ -68,7 +68,7 @@ func (p *Product) Create(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return web.Respond(w, prod, http.StatusCreated)
+	return web.Respond(r.Context(), w, prod, http.StatusCreated)
 }
 
 // UpdateProduct decodes the body of a request to update an existing Product.
@@ -89,7 +89,7 @@ func (p *Product) UpdateProduct(w http.ResponseWriter, r *http.Request) error {
 		return errors.Wrapf(err, "updating product %v", id)
 	}
 
-	return web.Respond(w, prod, http.StatusOK)
+	return web.Respond(r.Context(), w, prod, http.StatusOK)
 }
 
 // DeleteProduct removes a single Product indentified by an ID in the request URL
@@ -100,7 +100,7 @@ func (p *Product) DeleteProduct(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return web.Respond(w, nil, http.StatusNoContent)
+	return web.Respond(r.Context(), w, nil, http.StatusNoContent)
 }
 
 // AddSale creates a new Sale for a particular product. It looks for a JSON
@@ -123,7 +123,7 @@ func (p *Product) AddSale(w http.ResponseWriter, r *http.Request) error {
 		return errors.Wrapf(err, "looking for product %v", id)
 	}
 
-	return web.Respond(w, sale, http.StatusCreated)
+	return web.Respond(r.Context(), w, sale, http.StatusCreated)
 }
 
 // ListSales gets all Sales for a particular Product
@@ -139,5 +139,5 @@ func (p *Product) ListSales(w http.ResponseWriter, r *http.Request) error {
 		return errors.Wrapf(err, "looking for product %v", id)
 	}
 
-	return web.Respond(w, sales, http.StatusOK)
+	return web.Respond(r.Context(), w, sales, http.StatusOK)
 }

@@ -14,7 +14,7 @@ func Errors(log *log.Logger) web.Middleware {
 			if err := before(w, r); err != nil {
 				log.Printf("ERROR: %v", err)
 
-				if err := web.RespondError(w, err); err != nil {
+				if err := web.RespondError(r.Context(), w, err); err != nil {
 					return err
 				}
 			}

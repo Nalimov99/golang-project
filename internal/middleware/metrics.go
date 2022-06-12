@@ -18,6 +18,7 @@ var m = struct {
 	err: expvar.NewInt("errors"),
 }
 
+// Metrics updates program counters for the application
 func Metric() web.Middleware {
 	// This is actual mw function to be executed
 	f := func(before web.Handler) web.Handler {
@@ -35,6 +36,7 @@ func Metric() web.Middleware {
 				m.err.Add(1)
 			}
 
+			// Return the error to be handled further up the chain
 			return err
 		}
 
