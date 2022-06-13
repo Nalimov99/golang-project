@@ -2,11 +2,16 @@ package web
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi"
+)
+
+var (
+	ErrContextValueMissing = errors.New("web values missing from context")
 )
 
 // ctxCommonValuesKey represents the type of value for the context key

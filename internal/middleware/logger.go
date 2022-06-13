@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"garagesale/internal/platform/web"
 	"log"
 	"net/http"
@@ -18,7 +17,7 @@ func Logger(log *log.Logger) web.Middleware {
 
 			v, ok := ctx.Value(web.KeyValues).(*web.ContexValues)
 			if !ok {
-				return errors.New("web values missing from context")
+				return web.ErrContextValueMissing
 			}
 
 			log.Printf(

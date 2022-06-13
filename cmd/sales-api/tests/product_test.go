@@ -24,7 +24,7 @@ func TestProducts(t *testing.T) {
 	log := log.New(os.Stdout, "TEST", log.Flags())
 
 	tests := ProductTest{
-		app: handlers.API(log, db),
+		app: handlers.API(log, db, nil),
 	}
 
 	t.Log("RUN PRODUCT TESTS")

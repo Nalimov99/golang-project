@@ -12,7 +12,7 @@ import (
 func Respond(ctx context.Context, w http.ResponseWriter, val interface{}, statusCode int) error {
 	v, ok := ctx.Value(KeyValues).(*ContexValues)
 	if !ok {
-		return errors.New("web values missing from context")
+		return ErrContextValueMissing
 	}
 	v.StatusCode = statusCode
 

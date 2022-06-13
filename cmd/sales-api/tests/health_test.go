@@ -20,7 +20,7 @@ func TestStatusCheck(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/v1/health", nil)
 	resp := httptest.NewRecorder()
 
-	app := handlers.API(log, db)
+	app := handlers.API(log, db, nil)
 	app.ServeHTTP(resp, req)
 
 	if resp.Code != http.StatusOK {

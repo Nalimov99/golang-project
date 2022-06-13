@@ -2,12 +2,18 @@ package user
 
 import (
 	"context"
+	"database/sql"
+	"garagesale/internal/platform/auth"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
+)
+
+var (
+	ErrAuthenticationFailure = errors.New("Authentication failed")
 )
 
 // Create insert new user into the database
@@ -44,4 +50,28 @@ func Create(ctx context.Context, db *sqlx.DB, nu NewUser, now time.Time) (*User,
 	}
 
 	return &u, nil
+}
+
+// Authenticate find a user by their email and verifies their password. On success it returns
+// a Claims value representing this user. The claims can be used to generate a token for future
+// authentication.
+func Authenticate(ctx context.Context, db *sqlx.DB, now time.Time, email, password string) (auth.Claims, error) {
+	const q = `SELECT * FROM users WHERE email = $1;`
+
+	var u User
+
+	if err := db.GetContext(ctx, &u, q, email); err != nil {
+		if err == sql.ErrNoRows {
+			return auth.Claims{}, ErrAuthenticationFailure
+		}
+
+		return auth.Claims{}, errors.Wrap(err, "selecting single user")
+	}
+
+	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)); err != nil {
+		return auth.Claims{}, ErrAuthenticationFailure
+	}
+
+	claims := auth.NewClaims(u.ID, u.Roles, now, time.Hour)
+	return claims, nil
 }

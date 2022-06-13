@@ -4,6 +4,10 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
+	"crypto/x509"
+	"encoding/pem"
 	"flag"
 	"fmt"
 	"garagesale/internal/platform/auth"
@@ -55,6 +59,11 @@ func run() error {
 		err = useradd(cfg.DB)
 		if err == nil {
 			log.Print("user added")
+		}
+	case "keygen":
+		err = keygen()
+		if err == nil {
+			log.Print("keygen success")
 		}
 	default:
 		log.Print("No args passed")
@@ -128,6 +137,7 @@ func useradd(cfg database.Config) error {
 		return err
 	}
 
+	fmt.Println()
 	if bytes.Compare(repeatBytePassword, bytePassword) != 0 {
 		return errors.New("passwords are not equal")
 	}
@@ -141,6 +151,30 @@ func useradd(cfg database.Config) error {
 	}
 
 	if _, err := user.Create(context.Background(), db, nu, time.Now()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func keygen() error {
+	key, err := rsa.GenerateKey(rand.Reader, 2048)
+	if err != nil {
+		return err
+	}
+
+	file, err := os.Create("private.pem")
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+
+	block := pem.Block{
+		Type:  "RSA PRIVATE KEY",
+		Bytes: x509.MarshalPKCS1PrivateKey(key),
+	}
+
+	if err := pem.Encode(file, &block); err != nil {
 		return err
 	}
 
