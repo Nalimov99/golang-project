@@ -6,6 +6,12 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
+// ctxKey represents the type of value for the context key
+type ctxKey int
+
+// Key is used to store/retrieve Claims value fron context
+const Key ctxKey = 1
+
 // These are expected values for Claims.Roles
 const (
 	RoleAdmin = "ADMIN"

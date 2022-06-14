@@ -95,3 +95,34 @@ func (a *Authenticator) GenerateToken(claims Claims) (string, error) {
 
 	return str, nil
 }
+
+// ParseClaims recreates the Claims that we used to generate a token
+// It verifies that token was signed using our key
+func (a *Authenticator) ParseClaims(tokenStr string) (Claims, error) {
+	keyFunc := func(t *jwt.Token) (interface{}, error) {
+		kid, ok := t.Header["kid"]
+		if !ok {
+			return nil, errors.New("missing Kid in Token header")
+		}
+
+		userKID, ok := kid.(string)
+		if !ok {
+			return nil, errors.New("Kid must be string")
+		}
+
+		return a.publickKeyLookUpFunc(userKID)
+	}
+
+	var claims Claims
+
+	token, err := jwt.ParseWithClaims(tokenStr, &claims, keyFunc)
+	if err != nil {
+		return Claims{}, errors.Wrap(err, "parsing token")
+	}
+
+	if !token.Valid {
+		return Claims{}, errors.Wrap(err, "invalid token")
+	}
+
+	return claims, nil
+}
