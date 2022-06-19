@@ -30,17 +30,11 @@ func API(log *log.Logger, db *sqlx.DB, authenticator *auth.Authenticator) http.H
 	// LIST
 	app.Handle(http.MethodGet, "/v1/products", p.List, middleware.Authenticate(authenticator))
 	// CREATE
-	app.Handle(
-		http.MethodPost, "/v1/products", p.Create,
-		middleware.Authenticate(authenticator), middleware.HasRoles(auth.RoleAdmin),
-	)
+	app.Handle(http.MethodPost, "/v1/products", p.Create, middleware.Authenticate(authenticator))
 	// RETRIEVE
 	app.Handle(http.MethodGet, "/v1/products/{id}", p.Retrieve, middleware.Authenticate(authenticator))
 	// UPDATE
-	app.Handle(
-		http.MethodPatch, "/v1/products/{id}", p.UpdateProduct,
-		middleware.Authenticate(authenticator), middleware.HasRoles(auth.RoleAdmin),
-	)
+	app.Handle(http.MethodPatch, "/v1/products/{id}", p.UpdateProduct, middleware.Authenticate(authenticator))
 	// DELETE
 	app.Handle(
 		http.MethodDelete, "/v1/products/{id}", p.DeleteProduct,

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"garagesale/internal/platform/auth"
 	"garagesale/internal/platform/web"
 	"garagesale/internal/product"
 	"log"
@@ -25,6 +26,8 @@ func matchPredefinedErrors(err error) error {
 		return web.NewRequestError(err, http.StatusNotFound)
 	case product.ErrInvalidId:
 		return web.NewRequestError(err, http.StatusBadRequest)
+	case product.ErrForbidden:
+		return web.NewRequestError(err, http.StatusForbidden)
 	default:
 		return nil
 	}
@@ -58,13 +61,18 @@ func (p *Product) Retrieve(ctx context.Context, w http.ResponseWriter, r *http.R
 
 //Create decode a JSON from a POST request and create a new product
 func (p *Product) Create(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	claims, ok := ctx.Value(auth.Key).(auth.Claims)
+	if !ok {
+		return errors.New("auth claims not in context")
+	}
+
 	var np product.NewProduct
 
 	if err := web.Decode(r, &np); err != nil {
 		return err
 	}
 
-	prod, err := product.Create(ctx, p.DB, np, time.Now())
+	prod, err := product.Create(ctx, p.DB, claims, np, time.Now())
 	if err != nil {
 		return err
 	}
@@ -74,6 +82,11 @@ func (p *Product) Create(ctx context.Context, w http.ResponseWriter, r *http.Req
 
 // UpdateProduct decodes the body of a request to update an existing Product.
 func (p *Product) UpdateProduct(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	claims, ok := ctx.Value(auth.Key).(auth.Claims)
+	if !ok {
+		return errors.New("auth claims not in context")
+	}
+
 	id := chi.URLParam(r, "id")
 
 	var updates product.UpdateProduct
@@ -81,7 +94,7 @@ func (p *Product) UpdateProduct(ctx context.Context, w http.ResponseWriter, r *h
 		return err
 	}
 
-	prod, err := product.Update(ctx, p.DB, id, updates, time.Now())
+	prod, err := product.Update(ctx, p.DB, claims, id, updates, time.Now())
 	if err != nil {
 		if webErr := matchPredefinedErrors(err); webErr != nil {
 			return webErr

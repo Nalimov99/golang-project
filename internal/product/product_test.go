@@ -2,6 +2,7 @@ package product_test
 
 import (
 	"context"
+	"garagesale/internal/platform/auth"
 	"garagesale/internal/platform/database/databasetest"
 	"garagesale/internal/product"
 	"strconv"
@@ -24,7 +25,7 @@ func TestProducts(t *testing.T) {
 
 	now := time.Now()
 
-	p, err := product.Create(ctx, db, np, now)
+	p, err := product.Create(ctx, db, auth.Claims{}, np, now)
 	if err != nil {
 		t.Fatalf("could not create product %v", err)
 	}
@@ -61,7 +62,7 @@ func TestProductList(t *testing.T) {
 	var savedProducts []product.Product
 
 	for _, value := range newProducts {
-		saved, err := product.Create(ctx, db, value, now)
+		saved, err := product.Create(ctx, db, auth.Claims{}, value, now)
 		if err != nil {
 			t.Fatalf("could not create product %v", err)
 		}
@@ -96,7 +97,7 @@ func TestProductUpdate(t *testing.T) {
 		Quantity: 10,
 		Cost:     10,
 	}
-	createdProduct, err := product.Create(ctx, db, newProduct, createdTime)
+	createdProduct, err := product.Create(ctx, db, auth.Claims{}, newProduct, createdTime)
 	if err != nil {
 		t.Fatal("could not create a product")
 	}
@@ -110,7 +111,7 @@ func TestProductUpdate(t *testing.T) {
 		Cost:     &updateCost,
 		Quantity: &updateQuantity,
 	}
-	got, err := product.Update(ctx, db, strconv.Itoa(createdProduct.ID), update, updatedTime)
+	got, err := product.Update(ctx, db, auth.Claims{}, strconv.Itoa(createdProduct.ID), update, updatedTime)
 	if err != nil {
 		t.Fatalf("could not update product: %v", err)
 	}
@@ -149,7 +150,7 @@ func TestProductDelete(t *testing.T) {
 		Cost:     1,
 	}
 
-	created, err := product.Create(ctx, db, np, time.Now())
+	created, err := product.Create(ctx, db, auth.Claims{}, np, time.Now())
 	if err != nil {
 		t.Fatal("could not create")
 	}

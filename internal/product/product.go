@@ -3,6 +3,7 @@ package product
 import (
 	"context"
 	"database/sql"
+	"garagesale/internal/platform/auth"
 	"strconv"
 	"time"
 
@@ -14,6 +15,7 @@ import (
 var (
 	ErrNotFound  = errors.New("product not found")
 	ErrInvalidId = errors.New("ID provides was not a valid ID")
+	ErrForbidden = errors.New("attempted action is not allowed")
 )
 
 //List returns all known Products
@@ -47,7 +49,7 @@ func Retrieve(ctx context.Context, db *sqlx.DB, id string) (*Product, error) {
 
 	const q = `
 		SELECT 
-		p.product_id, p.name, p.quantity, p.cost,
+		p.product_id, p.name, p.quantity, p.user_id, p.cost,
 		COALESCE(SUM(s.quantity), 0) AS sold,
 		COALESCE(SUM(s.paid), 0) AS revenue,
 		p.date_created, p.date_updated
@@ -69,16 +71,18 @@ func Retrieve(ctx context.Context, db *sqlx.DB, id string) (*Product, error) {
 }
 
 // Create makes a new product
-func Create(ctx context.Context, db *sqlx.DB, np NewProduct, now time.Time) (*Product, error) {
+func Create(ctx context.Context, db *sqlx.DB, claims auth.Claims, np NewProduct, now time.Time) (*Product, error) {
 	var p Product
 
 	const q = `
 		INSERT INTO products
-		(name, cost, quantity, date_created, date_updated)
-		VALUES ($1, $2, $3, $4, $5)
+		(name, cost, quantity, user_id, date_created, date_updated)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING *
 	`
-	if err := db.QueryRowxContext(ctx, q, np.Name, np.Cost, np.Quantity, now.UTC(), now.UTC()).StructScan(&p); err != nil {
+	if err := db.QueryRowxContext(
+		ctx, q, np.Name, np.Cost, np.Quantity, claims.Subject, now.UTC(), now.UTC(),
+	).StructScan(&p); err != nil {
 		return nil, errors.Wrapf(err, "inserting products: %v \nNow: %v", p, now)
 	}
 
@@ -87,7 +91,7 @@ func Create(ctx context.Context, db *sqlx.DB, np NewProduct, now time.Time) (*Pr
 
 // Update modifies data about a Product. It will error if the specified ID
 // is invalid or does not reference an existing Product.
-func Update(ctx context.Context, db *sqlx.DB, id string, update UpdateProduct, now time.Time) (*Product, error) {
+func Update(ctx context.Context, db *sqlx.DB, claims auth.Claims, id string, update UpdateProduct, now time.Time) (*Product, error) {
 	if _, err := strconv.Atoi(id); err != nil {
 		return nil, ErrInvalidId
 	}
@@ -95,6 +99,10 @@ func Update(ctx context.Context, db *sqlx.DB, id string, update UpdateProduct, n
 	p, err := Retrieve(ctx, db, id)
 	if err != nil {
 		return nil, err
+	}
+
+	if !claims.HasRoles(auth.RoleAdmin) && claims.Subject != p.UserID {
+		return nil, ErrForbidden
 	}
 
 	if update.Name != nil {

@@ -10,6 +10,7 @@ type Product struct {
 	ID          int          `db:"product_id" json:"id"`
 	Name        string       `db:"name" json:"name"`
 	Quantity    int          `db:"quantity" json:"quantity"`
+	UserID      string       `db:"user_id" json:"user_id"`
 	Cost        int          `db:"cost" json:"cost"`
 	Sold        int          `db:"sold" json:"sold"`
 	Revenue     int          `db:"revenue" json:"revenue"`

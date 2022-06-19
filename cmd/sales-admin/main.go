@@ -56,7 +56,8 @@ func run() error {
 			log.Print("seed complete")
 		}
 	case "useradd":
-		err = useradd(cfg.DB)
+		role := flag.Arg(1)
+		err = useradd(cfg.DB, role)
 		if err == nil {
 			log.Print("user added")
 		}
@@ -101,12 +102,20 @@ func seed(cfg database.Config) error {
 	return nil
 }
 
-func useradd(cfg database.Config) error {
+func useradd(cfg database.Config, roleFlag string) error {
 	db, err := database.Open(cfg)
 	if err != nil {
 		return err
 	}
 	defer db.Close()
+
+	authRoles := []string{}
+	switch roleFlag {
+	case "user":
+		authRoles = append(authRoles, auth.RoleUser)
+	default:
+		authRoles = append(authRoles, []string{auth.RoleAdmin, auth.RoleUser}...)
+	}
 
 	reader := bufio.NewReader(os.Stdin)
 
@@ -145,7 +154,7 @@ func useradd(cfg database.Config) error {
 	nu := user.NewUser{
 		Name:            name,
 		Email:           email,
-		Roles:           []string{auth.RoleAdmin, auth.RoleUser},
+		Roles:           authRoles,
 		Password:        string(bytePassword),
 		PasswordConfirm: string(repeatBytePassword),
 	}

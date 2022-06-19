@@ -55,6 +55,23 @@ CREATE TABLE products (
 		);
 		`,
 	},
+	{
+		Version:     4,
+		Description: "Add user column to products",
+		Script: `
+		ALTER TABLE products
+		ADD COLUMN user_id UUID DEFAULT '00000000-0000-0000-0000-000000000000'
+		`,
+	},
+	{
+		Version:     5,
+		Description: "Add fk user_id to products",
+		Script: `
+		ALTER TABLE products
+		ADD CONSTRAINT FK_user_id
+		FOREIGN KEY (user_id) REFERENCES users(user_id);
+		`,
+	},
 }
 
 func Migrate(db *sqlx.DB) error {

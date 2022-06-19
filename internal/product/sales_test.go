@@ -2,6 +2,7 @@ package product_test
 
 import (
 	"context"
+	"garagesale/internal/platform/auth"
 	"garagesale/internal/platform/database/databasetest"
 	"garagesale/internal/product"
 	"strconv"
@@ -29,7 +30,7 @@ func TestAddSale(t *testing.T) {
 		Cost:     10,
 	}
 
-	p, err := product.Create(ctx, db, np, now)
+	p, err := product.Create(ctx, db, auth.Claims{}, np, now)
 	if err != nil {
 		t.Fatalf("could not create product %v", err)
 	}
@@ -79,7 +80,7 @@ func TestSalesList(t *testing.T) {
 		Cost:     10,
 	}
 
-	p, err := product.Create(ctx, db, np, now)
+	p, err := product.Create(ctx, db, auth.Claims{}, np, now)
 	if err != nil {
 		t.Fatalf("could not create product %v", err)
 	}
